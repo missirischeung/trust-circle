@@ -64,10 +64,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
               <BarChart3 className="h-4 w-4" />
               <span className="hidden sm:inline">Overview</span>
             </TabsTrigger>
-            <TabsTrigger value="submit" className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Submit Data</span>
-            </TabsTrigger>
+            {user.role !== "admin" && (
+              <TabsTrigger value="submit" className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Submit Data</span>
+              </TabsTrigger>
+            )}
             {user.role === "admin" && (
               <TabsTrigger value="approve" className="flex items-center gap-2">
                 <CheckCircle className="h-4 w-4" />
@@ -189,9 +191,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="submit">
-            <DataSubmissionForm userRole={user.role} />
-          </TabsContent>
+          {user.role !== "admin" && (
+            <TabsContent value="submit">
+              <DataSubmissionForm userRole={user.role} />
+            </TabsContent>
+          )}
 
           {user.role === "admin" && (
             <TabsContent value="approve">
