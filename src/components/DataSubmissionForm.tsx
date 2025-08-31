@@ -177,8 +177,45 @@ const DataSubmissionForm: React.FC<DataSubmissionFormProps> = ({ userRole }) => 
     });
   };
 
+  // Calculate deadline information
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth();
+  const currentYear = currentDate.getFullYear();
+  const currentDay = currentDate.getDate();
+  
+  // Deadline is the 10th of current month
+  const deadlineDate = new Date(currentYear, currentMonth, 10);
+  const isAfterDeadline = currentDay > 10;
+  const nextDeadlineDate = new Date(currentYear, currentMonth + 1, 10);
+  const daysUntilDeadline = isAfterDeadline 
+    ? Math.ceil((nextDeadlineDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24))
+    : Math.ceil((deadlineDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
+
   return (
     <div className="space-y-6">
+      {userRole === "partner" && (
+        <Card className={`border-2 ${isAfterDeadline ? 'border-destructive' : daysUntilDeadline <= 5 ? 'border-warning' : 'border-info'}`}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Submission Deadline
+            </CardTitle>
+            <CardDescription>
+              {isAfterDeadline ? (
+                <span className="text-destructive font-medium">
+                  The submission deadline for this month has passed. Next deadline: {nextDeadlineDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                </span>
+              ) : (
+                <span className={daysUntilDeadline <= 5 ? 'text-warning font-medium' : 'text-info'}>
+                  Deadline: {deadlineDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} 
+                  {daysUntilDeadline === 0 ? ' (Today!)' : ` (${daysUntilDeadline} days remaining)`}
+                </span>
+              )}
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
+      
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Data Submission</h2>

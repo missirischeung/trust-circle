@@ -3,7 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, Plus, Eye, CheckCircle, XCircle, Clock, Users, FileText, BarChart3, Globe } from "lucide-react";
+import { LogOut, Plus, Eye, CheckCircle, XCircle, Clock, Users, FileText, BarChart3, Globe, Bell, Send } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import MetricsDashboard from "@/components/MetricsDashboard";
 import DataSubmissionForm from "@/components/DataSubmissionForm";
 import ApprovalQueue from "@/components/ApprovalQueue";
@@ -15,6 +17,36 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState("overview");
+  const { toast } = useToast();
+
+  const handleSendDeadlineReminder = async () => {
+    try {
+      toast({
+        title: "Sending notifications...",
+        description: "Please wait while we send deadline reminders to all local partners.",
+      });
+
+      const { error } = await supabase.functions.invoke('send-deadline-reminder', {
+        body: { message: 'deadline_reminder' }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Notifications Sent",
+        description: "Deadline reminders have been successfully sent to all local partners.",
+      });
+    } catch (error) {
+      console.error('Error sending notifications:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send notifications. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const getRoleDisplayName = (role: string) => {
     switch (role) {
@@ -71,10 +103,16 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
               </TabsTrigger>
             )}
             {user.role === "admin" && (
-              <TabsTrigger value="approve" className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4" />
-                <span className="hidden sm:inline">Approvals</span>
-              </TabsTrigger>
+              <>
+                <TabsTrigger value="approve" className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4" />
+                  <span className="hidden sm:inline">Approvals</span>
+                </TabsTrigger>
+                <TabsTrigger value="notifications" className="flex items-center gap-2">
+                  <Bell className="h-4 w-4" />
+                  <span className="hidden sm:inline">Notifications</span>
+                </TabsTrigger>
+              </>
             )}
             <TabsTrigger value="metrics" className="flex items-center gap-2">
               <Eye className="h-4 w-4" />
@@ -198,9 +236,40 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
           )}
 
           {user.role === "admin" && (
-            <TabsContent value="approve">
-              <ApprovalQueue />
-            </TabsContent>
+            <>
+              <TabsContent value="approve">
+                <ApprovalQueue />
+              </TabsContent>
+              
+              <TabsContent value="notifications">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Bell className="h-5 w-5" />
+                      Send Notifications to Local Partners
+                    </CardTitle>
+                    <CardDescription>
+                      Remind local partners about submission deadlines and important updates
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="bg-muted/50 p-4 rounded-lg">
+                      <h4 className="font-medium mb-2">Deadline Reminder</h4>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Send a reminder to all local partners about the monthly submission deadline (10th of each month).
+                      </p>
+                       <Button 
+                         onClick={handleSendDeadlineReminder}
+                         className="flex items-center gap-2"
+                       >
+                        <Send className="h-4 w-4" />
+                        Send Deadline Reminder
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </>
           )}
 
           <TabsContent value="metrics">
