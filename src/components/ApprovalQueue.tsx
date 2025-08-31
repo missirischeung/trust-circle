@@ -19,10 +19,14 @@ import {
   MessageSquare,
   Check,
   X,
-  Loader2
+  Loader2,
+  Languages,
+  Globe
 } from "lucide-react";
 import { useRoleBasedSubmissions } from "@/hooks/useRoleBasedSubmissions";
 import { MetricApproval } from "@/types/submissions";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 
 const ApprovalQueue = () => {
@@ -39,6 +43,10 @@ const ApprovalQueue = () => {
   
   const [rejectionReason, setRejectionReason] = useState("");
   const [metricRejectionReason, setMetricRejectionReason] = useState("");
+  const [translatedDescriptions, setTranslatedDescriptions] = useState<Record<string, string>>({});
+  const [translatingDescriptions, setTranslatingDescriptions] = useState<Record<string, boolean>>({});
+  const [showTranslated, setShowTranslated] = useState<Record<string, boolean>>({});
+  const { toast } = useToast();
 
   // Transform data to match existing component structure
   const submissions = rawSubmissions
@@ -141,6 +149,48 @@ const ApprovalQueue = () => {
 
   const formatMetricLabel = (field: string) => {
     return field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+  };
+
+  const translateDescription = async (submissionId: string, description: string) => {
+    if (translatedDescriptions[submissionId]) {
+      // Already translated, just toggle display
+      setShowTranslated(prev => ({ ...prev, [submissionId]: !prev[submissionId] }));
+      return;
+    }
+
+    setTranslatingDescriptions(prev => ({ ...prev, [submissionId]: true }));
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('translate-text', {
+        body: {
+          text: description,
+          targetLanguage: 'en'
+        }
+      });
+
+      if (error) throw error;
+
+      setTranslatedDescriptions(prev => ({ 
+        ...prev, 
+        [submissionId]: data.translatedText 
+      }));
+      setShowTranslated(prev => ({ ...prev, [submissionId]: true }));
+      
+      toast({
+        title: "Translation completed",
+        description: `Translated from ${data.detectedLanguage || 'auto-detected language'} to English`
+      });
+
+    } catch (error) {
+      console.error('Translation error:', error);
+      toast({
+        title: "Translation failed",
+        description: "Unable to translate the description. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setTranslatingDescriptions(prev => ({ ...prev, [submissionId]: false }));
+    }
   };
 
   if (loading) {
@@ -257,8 +307,48 @@ const ApprovalQueue = () => {
                           </div>
 
                           <div>
-                            <Label className="text-sm font-medium">Description</Label>
-                            <p className="text-sm text-muted-foreground mt-1">{submission.description}</p>
+                            <div className="flex items-center justify-between mb-2">
+                              <Label className="text-sm font-medium">Description</Label>
+                              <div className="flex items-center space-x-2">
+                                {showTranslated[submission.id] && translatedDescriptions[submission.id] && (
+                                  <Badge variant="outline" className="border-success text-success text-xs">
+                                    <Globe className="h-3 w-3 mr-1" />
+                                    Translated
+                                  </Badge>
+                                )}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => translateDescription(submission.id, submission.description)}
+                                  disabled={translatingDescriptions[submission.id]}
+                                  className="text-xs h-7"
+                                >
+                                  {translatingDescriptions[submission.id] ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    <Languages className="h-3 w-3 mr-1" />
+                                  )}
+                                  {showTranslated[submission.id] && translatedDescriptions[submission.id] 
+                                    ? "Show Original" 
+                                    : "Translate to English"
+                                  }
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="bg-muted/30 p-3 rounded-md">
+                              <p className="text-sm text-foreground">
+                                {showTranslated[submission.id] && translatedDescriptions[submission.id] 
+                                  ? translatedDescriptions[submission.id]
+                                  : submission.description
+                                }
+                              </p>
+                              {showTranslated[submission.id] && translatedDescriptions[submission.id] && (
+                                <div className="mt-2 pt-2 border-t border-muted">
+                                  <Label className="text-xs text-muted-foreground">Original:</Label>
+                                  <p className="text-xs text-muted-foreground italic">{submission.description}</p>
+                                </div>
+                              )}
+                            </div>
                           </div>
 
                           {/* Metrics with Individual Approvals */}
