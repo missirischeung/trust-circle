@@ -61,8 +61,8 @@ export const useRoleBasedSubmissions = () => {
         // Partners see pending submissions from field agents (RLS will filter for agent submissions only)
         query = query.eq('status', 'pending');
       } else if (userRole === 'admin') {
-        // Admins see submissions ready for final approval
-        query = query.eq('status', 'ready_for_final');
+        // Admins see submissions ready for final approval AND partner submissions
+        query = query.in('status', ['ready_for_final', 'pending']);
       } else {
         // Agents see their own submissions
         query = query.eq('user_id', user.id);
