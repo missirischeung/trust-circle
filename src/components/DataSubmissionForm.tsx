@@ -419,231 +419,233 @@ const DataSubmissionForm: React.FC<DataSubmissionFormProps> = ({ userRole }) => 
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Impact Metrics</CardTitle>
-            <CardDescription>Enter numerical data for impact tracking (leave blank if not applicable)</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="individualsReached">Individuals Reached with Prevention Resources</Label>
-                <Input
-                  id="individualsReached"
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={formData.numbers.individualsReached}
-                  onChange={(e) => handleNumberChange('individualsReached', e.target.value)}
-                />
-              </div>
+        {userRole !== "agent" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Impact Metrics</CardTitle>
+              <CardDescription>Enter numerical data for impact tracking (leave blank if not applicable)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="individualsReached">Individuals Reached with Prevention Resources</Label>
+                  <Input
+                    id="individualsReached"
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={formData.numbers.individualsReached}
+                    onChange={(e) => handleNumberChange('individualsReached', e.target.value)}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="scholarshipsDistributed">Prevention Scholarships/Kits Distributed</Label>
-                <Input
-                  id="scholarshipsDistributed"
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={formData.numbers.scholarshipsDistributed}
-                  onChange={(e) => handleNumberChange('scholarshipsDistributed', e.target.value)}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="scholarshipsDistributed">Prevention Scholarships/Kits Distributed</Label>
+                  <Input
+                    id="scholarshipsDistributed"
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={formData.numbers.scholarshipsDistributed}
+                    onChange={(e) => handleNumberChange('scholarshipsDistributed', e.target.value)}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="schoolsReached">Schools Reached with Prevention Resources</Label>
-                <Input
-                  id="schoolsReached"
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={formData.numbers.schoolsReached}
-                  onChange={(e) => handleNumberChange('schoolsReached', e.target.value)}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="schoolsReached">Schools Reached with Prevention Resources</Label>
+                  <Input
+                    id="schoolsReached"
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={formData.numbers.schoolsReached}
+                    onChange={(e) => handleNumberChange('schoolsReached', e.target.value)}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="communitiesEngaged">Communities Engaged</Label>
-                <Input
-                  id="communitiesEngaged"
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={formData.numbers.communitiesEngaged}
-                  onChange={(e) => handleNumberChange('communitiesEngaged', e.target.value)}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="communitiesEngaged">Communities Engaged</Label>
+                  <Input
+                    id="communitiesEngaged"
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={formData.numbers.communitiesEngaged}
+                    onChange={(e) => handleNumberChange('communitiesEngaged', e.target.value)}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="presentationsConducted">Prevention Presentations Conducted</Label>
-                <Input
-                  id="presentationsConducted"
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={formData.numbers.presentationsConducted}
-                  onChange={(e) => handleNumberChange('presentationsConducted', e.target.value)}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="presentationsConducted">Prevention Presentations Conducted</Label>
+                  <Input
+                    id="presentationsConducted"
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={formData.numbers.presentationsConducted}
+                    onChange={(e) => handleNumberChange('presentationsConducted', e.target.value)}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="leadersTrained">Makwa Community Leaders Trained</Label>
-                <Input
-                  id="leadersTrained"
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={formData.numbers.leadersTrained}
-                  onChange={(e) => handleNumberChange('leadersTrained', e.target.value)}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="leadersTrained">Makwa Community Leaders Trained</Label>
+                  <Input
+                    id="leadersTrained"
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={formData.numbers.leadersTrained}
+                    onChange={(e) => handleNumberChange('leadersTrained', e.target.value)}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="safeSchooling">Individuals with Safe Schooling</Label>
-                <Input
-                  id="safeSchooling"
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={formData.numbers.safeSchooling}
-                  onChange={(e) => handleNumberChange('safeSchooling', e.target.value)}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="safeSchooling">Individuals Receiving Safe Schooling</Label>
+                  <Input
+                    id="safeSchooling"
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={formData.numbers.safeSchooling}
+                    onChange={(e) => handleNumberChange('safeSchooling', e.target.value)}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="universityScholarships">University Scholarships Supported</Label>
-                <Input
-                  id="universityScholarships"
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={formData.numbers.universityScholarships}
-                  onChange={(e) => handleNumberChange('universityScholarships', e.target.value)}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="universityScholarships">University Scholarships</Label>
+                  <Input
+                    id="universityScholarships"
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={formData.numbers.universityScholarships}
+                    onChange={(e) => handleNumberChange('universityScholarships', e.target.value)}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="vocationalTraining">Individuals in Vocational Training</Label>
-                <Input
-                  id="vocationalTraining"
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={formData.numbers.vocationalTraining}
-                  onChange={(e) => handleNumberChange('vocationalTraining', e.target.value)}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="vocationalTraining">Vocational Training Programs</Label>
+                  <Input
+                    id="vocationalTraining"
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={formData.numbers.vocationalTraining}
+                    onChange={(e) => handleNumberChange('vocationalTraining', e.target.value)}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="traumaCare">Individuals with Trauma-Informed Care</Label>
-                <Input
-                  id="traumaCare"
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={formData.numbers.traumaCare}
-                  onChange={(e) => handleNumberChange('traumaCare', e.target.value)}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="traumaCare">Trauma Care Counseling</Label>
+                  <Input
+                    id="traumaCare"
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={formData.numbers.traumaCare}
+                    onChange={(e) => handleNumberChange('traumaCare', e.target.value)}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="safeHomes">Individuals in Safe Homes</Label>
-                <Input
-                  id="safeHomes"
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={formData.numbers.safeHomes}
-                  onChange={(e) => handleNumberChange('safeHomes', e.target.value)}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="safeHomes">Safe Homes Provided</Label>
+                  <Input
+                    id="safeHomes"
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={formData.numbers.safeHomes}
+                    onChange={(e) => handleNumberChange('safeHomes', e.target.value)}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="newSurvivors">New Survivors in Safe Housing This Year</Label>
-                <Input
-                  id="newSurvivors"
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={formData.numbers.newSurvivors}
-                  onChange={(e) => handleNumberChange('newSurvivors', e.target.value)}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="newSurvivors">New Survivors Identified</Label>
+                  <Input
+                    id="newSurvivors"
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={formData.numbers.newSurvivors}
+                    onChange={(e) => handleNumberChange('newSurvivors', e.target.value)}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="careStaff">Staff Providing Trauma-Informed Care</Label>
-                <Input
-                  id="careStaff"
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={formData.numbers.careStaff}
-                  onChange={(e) => handleNumberChange('careStaff', e.target.value)}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="careStaff">Care Staff</Label>
+                  <Input
+                    id="careStaff"
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={formData.numbers.careStaff}
+                    onChange={(e) => handleNumberChange('careStaff', e.target.value)}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="totalStaff">Total Staff Across Project</Label>
-                <Input
-                  id="totalStaff"
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={formData.numbers.totalStaff}
-                  onChange={(e) => handleNumberChange('totalStaff', e.target.value)}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="totalStaff">Total Staff</Label>
+                  <Input
+                    id="totalStaff"
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={formData.numbers.totalStaff}
+                    onChange={(e) => handleNumberChange('totalStaff', e.target.value)}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="counselingSupport">Individuals with Counseling Support</Label>
-                <Input
-                  id="counselingSupport"
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={formData.numbers.counselingSupport}
-                  onChange={(e) => handleNumberChange('counselingSupport', e.target.value)}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="counselingSupport">Counseling Support Sessions</Label>
+                  <Input
+                    id="counselingSupport"
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={formData.numbers.counselingSupport}
+                    onChange={(e) => handleNumberChange('counselingSupport', e.target.value)}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="financialPackages">Financial Assistance Packages Provided</Label>
-                <Input
-                  id="financialPackages"
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={formData.numbers.financialPackages}
-                  onChange={(e) => handleNumberChange('financialPackages', e.target.value)}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="financialPackages">Financial Support Packages</Label>
+                  <Input
+                    id="financialPackages"
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={formData.numbers.financialPackages}
+                    onChange={(e) => handleNumberChange('financialPackages', e.target.value)}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="familyReintegration">Individuals Reintegrated with Family</Label>
-                <Input
-                  id="familyReintegration"
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={formData.numbers.familyReintegration}
-                  onChange={(e) => handleNumberChange('familyReintegration', e.target.value)}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="familyReintegration">Family Reintegration Cases</Label>
+                  <Input
+                    id="familyReintegration"
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={formData.numbers.familyReintegration}
+                    onChange={(e) => handleNumberChange('familyReintegration', e.target.value)}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="repatriation">Individuals Repatriated</Label>
-                <Input
-                  id="repatriation"
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={formData.numbers.repatriation}
-                  onChange={(e) => handleNumberChange('repatriation', e.target.value)}
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="repatriation">Repatriation Cases</Label>
+                  <Input
+                    id="repatriation"
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={formData.numbers.repatriation}
+                    onChange={(e) => handleNumberChange('repatriation', e.target.value)}
+                  />
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>

@@ -91,34 +91,43 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
 
       <div className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-none lg:inline-flex">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              <span className="hidden sm:inline">Overview</span>
-            </TabsTrigger>
-            {user.role !== "admin" && (
-              <TabsTrigger value="submit" className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Submit Data</span>
-              </TabsTrigger>
-            )}
-            {user.role === "admin" && (
-              <>
-                <TabsTrigger value="approve" className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4" />
-                  <span className="hidden sm:inline">Approvals</span>
+          {user.role === "agent" ? (
+            // Field agents only see the submission interface
+            <div className="space-y-6">
+              <DataSubmissionForm userRole={user.role} />
+            </div>
+          ) : (
+            <>
+              <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-none lg:inline-flex">
+                <TabsTrigger value="overview" className="flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Overview</span>
                 </TabsTrigger>
-                <TabsTrigger value="notifications" className="flex items-center gap-2">
-                  <Bell className="h-4 w-4" />
-                  <span className="hidden sm:inline">Notifications</span>
+                {user.role !== "admin" && (
+                  <TabsTrigger value="submit" className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    <span className="hidden sm:inline">Submit Data</span>
+                  </TabsTrigger>
+                )}
+                {user.role === "admin" && (
+                  <>
+                    <TabsTrigger value="approve" className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4" />
+                      <span className="hidden sm:inline">Approvals</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="notifications" className="flex items-center gap-2">
+                      <Bell className="h-4 w-4" />
+                      <span className="hidden sm:inline">Notifications</span>
+                    </TabsTrigger>
+                  </>
+                )}
+                <TabsTrigger value="metrics" className="flex items-center gap-2">
+                  <Eye className="h-4 w-4" />
+                  <span className="hidden sm:inline">Metrics</span>
                 </TabsTrigger>
-              </>
-            )}
-            <TabsTrigger value="metrics" className="flex items-center gap-2">
-              <Eye className="h-4 w-4" />
-              <span className="hidden sm:inline">Metrics</span>
-            </TabsTrigger>
-          </TabsList>
+              </TabsList>
+            </>
+          )}
 
           <TabsContent value="overview" className="space-y-6">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
