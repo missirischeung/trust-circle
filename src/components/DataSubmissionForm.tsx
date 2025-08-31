@@ -159,6 +159,16 @@ const DataSubmissionForm: React.FC<DataSubmissionFormProps> = ({ userRole }) => 
     });
   };
 
+  // Add function to remove individual attachments
+  const removeAttachment = (attachmentId: string) => {
+    setAttachments(prev => prev.filter(att => att.id !== attachmentId));
+    toast({
+      title: "Attachment Removed",
+      description: "File has been removed from your submission.",
+      variant: "default"
+    });
+  };
+
   // Add a function to clear all attachments if needed
   const clearAllAttachments = () => {
     setAttachments([]);

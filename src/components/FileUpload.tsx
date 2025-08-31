@@ -144,7 +144,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
     }
 
     if (processedFiles.length > 0) {
-      onFilesUpload([...uploadedFiles, ...processedFiles]);
+      // Only send the NEW files, not all files
+      onFilesUpload(processedFiles);
       toast({
         title: "Files uploaded",
         description: `Successfully uploaded ${processedFiles.length} file(s)`,
@@ -176,7 +177,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   const removeFile = (fileId: string) => {
     const updatedFiles = uploadedFiles.filter(f => f.id !== fileId);
     setUploadedFiles(updatedFiles);
-    onFilesUpload(updatedFiles);
+    // Don't call onFilesUpload here - let parent manage its own attachment state
   };
 
   return (
