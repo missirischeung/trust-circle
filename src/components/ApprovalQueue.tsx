@@ -18,187 +18,80 @@ import {
   AlertTriangle,
   MessageSquare,
   Check,
-  X
+  X,
+  Loader2
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { Submission, SubmissionMetric, MetricApproval } from "@/types/submissions";
+import { useRoleBasedSubmissions } from "@/hooks/useRoleBasedSubmissions";
+import { MetricApproval } from "@/types/submissions";
 
-// Mock data for pending submissions with individual metric approvals
-const pendingSubmissions: Submission[] = [
-  {
-    id: "SUB-001",
-    submittedBy: "partner.cambodia@org.com",
-    submittedAt: "2024-01-15 14:30",
-    lastModified: "2024-01-15 16:45",
-    category: "Prevention Resources",
-    location: "Phnom Penh, Cambodia",
-    description: "Distribution of prevention materials and educational resources to 5 local schools in the Phnom Penh area.",
-    changes: [
-      {
-        field: "individualsReached",
-        oldValue: "150",
-        newValue: "175",
-        reason: "Found additional registration forms from afternoon session",
-        timestamp: "2024-01-15 16:45"
-      }
-    ],
-    metrics: [
-      { field: "individualsReached", value: 175, approval: { status: "pending" } },
-      { field: "scholarshipsDistributed", value: 25, approval: { status: "approved", approvedBy: "admin@org.com", approvedAt: "2024-01-15 17:00" } },
-      { field: "schoolsReached", value: 5, approval: { status: "pending" } },
-      { field: "communitiesEngaged", value: 3, approval: { status: "pending" } }
-    ],
-    status: "partially_approved",
-    priority: "normal",
-    finalApproval: { status: "pending" }
-  },
-  {
-    id: "SUB-002",
-    submittedBy: "field.kathmandu@org.com",
-    submittedAt: "2024-01-14 09:15",
-    lastModified: "2024-01-14 09:15",
-    category: "Safe Housing",
-    location: "Kathmandu, Nepal",
-    description: "Monthly report on safe housing capacity and new survivor intake.",
-    changes: [],
-    metrics: [
-      { field: "safeHomes", value: 12, approval: { status: "pending" } },
-      { field: "newSurvivors", value: 3, approval: { status: "pending" } },
-      { field: "careStaff", value: 8, approval: { status: "pending" } },
-      { field: "traumaCare", value: 15, approval: { status: "pending" } }
-    ],
-    status: "pending",
-    priority: "high",
-    finalApproval: { status: "pending" }
-  },
-  {
-    id: "SUB-003",
-    submittedBy: "partner.bangkok@org.com",
-    submittedAt: "2024-01-13 11:20",
-    lastModified: "2024-01-14 08:30",
-    category: "Community Engagement",
-    location: "Bangkok, Thailand",
-    description: "Community leader training session and prevention presentation outcomes.",
-    changes: [
-      {
-        field: "leadersTrained",
-        oldValue: "12",
-        newValue: "15",
-        reason: "Three additional attendees joined late and completed full training",
-        timestamp: "2024-01-14 08:30"
-      },
-      {
-        field: "presentationsConducted",
-        oldValue: "2",
-        newValue: "3",
-        reason: "Added impromptu session for local government officials",
-        timestamp: "2024-01-14 08:30"
-      }
-    ],
-    metrics: [
-      { field: "leadersTrained", value: 15, approval: { status: "approved", approvedBy: "admin@org.com", approvedAt: "2024-01-14 10:00" } },
-      { field: "presentationsConducted", value: 3, approval: { status: "approved", approvedBy: "admin@org.com", approvedAt: "2024-01-14 10:00" } },
-      { field: "communitiesEngaged", value: 2, approval: { status: "approved", approvedBy: "admin@org.com", approvedAt: "2024-01-14 10:00" } }
-    ],
-    status: "ready_for_final",
-    priority: "normal",
-    finalApproval: { status: "pending" }
-  }
-];
 
 const ApprovalQueue = () => {
-  const { toast } = useToast();
-  const [submissions, setSubmissions] = useState(pendingSubmissions);
-  const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
+  const { 
+    submissions: rawSubmissions, 
+    loading, 
+    error, 
+    approveMetric, 
+    rejectMetric, 
+    finalApproveSubmission, 
+    finalRejectSubmission 
+  } = useRoleBasedSubmissions();
+  
   const [rejectionReason, setRejectionReason] = useState("");
   const [metricRejectionReason, setMetricRejectionReason] = useState("");
 
-  const handleMetricApprove = (submissionId: string, metricField: string) => {
-    setSubmissions(prev => 
-      prev.map(sub => {
-        if (sub.id === submissionId) {
-          const updatedMetrics = sub.metrics.map(metric => 
-            metric.field === metricField 
-              ? { ...metric, approval: { status: "approved" as const, approvedBy: "admin@org.com", approvedAt: new Date().toISOString() } }
-              : metric
-          );
-          
-          // Check if all metrics are approved to update submission status
-          const allApproved = updatedMetrics.every(m => m.approval.status === "approved");
-          const newStatus: Submission['status'] = allApproved ? "ready_for_final" : "partially_approved";
-          
-          return { ...sub, metrics: updatedMetrics, status: newStatus };
+  // Transform data to match existing component structure
+  const submissions = rawSubmissions
+    .filter(sub => sub.status !== 'approved') // Only show pending/partial approvals
+    .map(sub => ({
+      id: sub.id,
+      submittedBy: sub.submittedBy,
+      submittedAt: sub.submittedAt,
+      lastModified: sub.lastModified,
+      category: sub.category,
+      location: sub.location,
+      description: sub.description,
+      changes: sub.submission_changes?.map(change => ({
+        field: change.field,
+        oldValue: change.old_value || '',
+        newValue: change.new_value,
+        reason: change.reason,
+        timestamp: new Date(change.created_at).toLocaleString()
+      })) || [],
+      metrics: sub.submission_metrics?.map(metric => ({
+        field: metric.field,
+        value: metric.value,
+        approval: {
+          status: metric.approval_status as 'pending' | 'approved' | 'rejected',
+          approvedBy: metric.approved_by,
+          approvedAt: metric.approved_at,
+          rejectionReason: metric.rejection_reason
         }
-        return sub;
-      })
-    );
-    
-    toast({
-      title: "Metric Approved",
-      description: `${metricField.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())} has been approved.`,
-      variant: "default"
-    });
+      })) || [],
+      status: sub.status as 'pending' | 'partially_approved' | 'ready_for_final' | 'approved' | 'rejected',
+      priority: sub.priority as 'low' | 'normal' | 'high',
+      finalApproval: {
+        status: sub.final_approved_by ? 'approved' : 'pending' as 'pending' | 'approved' | 'rejected',
+        approvedBy: sub.final_approved_by,
+        approvedAt: sub.final_approved_at,
+        rejectionReason: sub.final_rejection_reason
+      }
+    }));
+
+  const handleMetricApprove = (submissionId: string, metricField: string) => {
+    approveMetric(submissionId, metricField);
   };
 
   const handleMetricReject = (submissionId: string, metricField: string, reason: string) => {
-    setSubmissions(prev => 
-      prev.map(sub => {
-        if (sub.id === submissionId) {
-          const updatedMetrics = sub.metrics.map(metric => 
-            metric.field === metricField 
-              ? { ...metric, approval: { status: "rejected" as const, rejectionReason: reason } }
-              : metric
-          );
-          return { ...sub, metrics: updatedMetrics };
-        }
-        return sub;
-      })
-    );
-    
-    toast({
-      title: "Metric Rejected",
-      description: `${metricField.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())} has been rejected.`,
-      variant: "destructive"
-    });
+    rejectMetric(submissionId, metricField, reason);
     setMetricRejectionReason("");
   };
 
   const handleFinalApprove = (submissionId: string) => {
-    setSubmissions(prev => 
-      prev.map(sub => {
-        if (sub.id === submissionId) {
-          const updatedStatus: Submission['status'] = "approved";
-          const updatedFinalApproval: Submission['finalApproval'] = { 
-            status: "approved", 
-            approvedBy: "admin@org.com", 
-            approvedAt: new Date().toISOString() 
-          };
-          return { 
-            ...sub, 
-            status: updatedStatus,
-            finalApproval: updatedFinalApproval
-          };
-        }
-        return sub;
-      }).filter(sub => sub.id !== submissionId) // Remove from queue after final approval
-    );
-    
-    toast({
-      title: "Submission Finalized",
-      description: "All data has been approved and added to live metrics.",
-      variant: "default"
-    });
+    finalApproveSubmission(submissionId);
   };
 
   const handleFinalReject = (submissionId: string, reason: string) => {
-    setSubmissions(prev => 
-      prev.filter(sub => sub.id !== submissionId)
-    );
-    toast({
-      title: "Submission Rejected",
-      description: "Submitter has been notified with feedback for revision.",
-      variant: "destructive"
-    });
+    finalRejectSubmission(submissionId, reason);
     setRejectionReason("");
   };
 
@@ -248,6 +141,31 @@ const ApprovalQueue = () => {
   const formatMetricLabel = (field: string) => {
     return field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2">Loading submissions...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Error Loading Data</h3>
+            <p className="text-muted-foreground text-center">{error}</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
