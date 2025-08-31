@@ -92,7 +92,7 @@ const DataSubmissionForm: React.FC<DataSubmissionFormProps> = ({ userRole }) => 
       });
     }
 
-    // Reset form
+    // Reset form data but keep attachments
     setFormData({
       category: "",
       location: "",
@@ -120,7 +120,7 @@ const DataSubmissionForm: React.FC<DataSubmissionFormProps> = ({ userRole }) => 
         repatriation: ""
       }
     });
-    setAttachments([]);
+    // Don't reset attachments - keep them for the next submission
   };
 
   const handleNumberChange = (field: string, value: string) => {
@@ -155,6 +155,16 @@ const DataSubmissionForm: React.FC<DataSubmissionFormProps> = ({ userRole }) => 
     toast({
       title: "Voice Note Added",
       description: `Voice recording (${Math.round(duration)}s) added to your submission.`,
+      variant: "default"
+    });
+  };
+
+  // Add a function to clear all attachments if needed
+  const clearAllAttachments = () => {
+    setAttachments([]);
+    toast({
+      title: "Attachments Cleared",
+      description: "All files, voice notes, and documents have been removed.",
       variant: "default"
     });
   };
@@ -609,6 +619,16 @@ const DataSubmissionForm: React.FC<DataSubmissionFormProps> = ({ userRole }) => 
         </Card>
 
         <div className="flex justify-end space-x-4">
+          {attachments.length > 0 && (
+            <Button 
+              variant="ghost" 
+              type="button" 
+              onClick={clearAllAttachments}
+              className="text-muted-foreground hover:text-destructive"
+            >
+              Clear Attachments ({attachments.length})
+            </Button>
+          )}
           <Button variant="outline" type="button">
             <Save className="h-4 w-4 mr-2" />
             Save Draft
