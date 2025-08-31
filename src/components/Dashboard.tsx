@@ -83,6 +83,9 @@ const Dashboard: React.FC<DashboardProps> = ({
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
+              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-sm">
+                <div className="text-white font-bold text-xs">TC</div>
+              </div>
               <h1 className="text-2xl font-bold text-foreground">TrustCircle</h1>
               <Badge variant={getRoleBadgeVariant(user.role)}>
                 {getRoleDisplayName(user.role)}

@@ -161,8 +161,10 @@ const Index = () => {
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center mb-6">
-            <Heart className="h-12 w-12 text-primary mr-3" />
-            <h1 className="text-4xl font-bold text-foreground">SafeGuard</h1>
+            <div className="h-16 w-16 mr-4 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
+              <div className="text-white font-bold text-lg">TC</div>
+            </div>
+            <h1 className="text-4xl font-bold text-foreground">TrustCircle</h1>
           </div>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Humanitarian Data Management Platform for Anti-Trafficking Operations
