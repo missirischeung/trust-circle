@@ -7,8 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Upload, Mic, FileText, Save, MapPin, Calendar, Users, WifiOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import FileUpload from "@/components/FileUpload";
+import VoiceRecorder from "@/components/VoiceRecorder";
+import GoogleDocsIntegration from "@/components/GoogleDocsIntegration";
 
 interface DataSubmissionFormProps {
   userRole: "admin" | "partner" | "agent";
@@ -17,6 +21,7 @@ interface DataSubmissionFormProps {
 const DataSubmissionForm: React.FC<DataSubmissionFormProps> = ({ userRole }) => {
   const { toast } = useToast();
   const [isOffline, setIsOffline] = useState(false);
+  const [attachments, setAttachments] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     category: "",
     location: "",
@@ -65,18 +70,24 @@ const DataSubmissionForm: React.FC<DataSubmissionFormProps> = ({ userRole }) => 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Include attachments in submission
+    const submissionData = {
+      ...formData,
+      attachments: attachments
+    };
+    
     // Simulate offline storage
     if (isOffline) {
-      localStorage.setItem('offline_submission_' + Date.now(), JSON.stringify(formData));
+      localStorage.setItem('offline_submission_' + Date.now(), JSON.stringify(submissionData));
       toast({
         title: "Saved Offline",
-        description: "Your submission has been saved locally and will be synced when connection is restored.",
+        description: `Your submission with ${attachments.length} attachment(s) has been saved locally and will be synced when connection is restored.`,
         variant: "default"
       });
     } else {
       toast({
         title: "Submission Sent",
-        description: "Your data has been submitted for review and approval.",
+        description: `Your data with ${attachments.length} attachment(s) has been submitted for review and approval.`,
         variant: "default"
       });
     }
@@ -109,6 +120,7 @@ const DataSubmissionForm: React.FC<DataSubmissionFormProps> = ({ userRole }) => 
         repatriation: ""
       }
     });
+    setAttachments([]);
   };
 
   const handleNumberChange = (field: string, value: string) => {
@@ -119,6 +131,50 @@ const DataSubmissionForm: React.FC<DataSubmissionFormProps> = ({ userRole }) => 
         [field]: value
       }
     }));
+  };
+
+  const handleFileUpload = (files: any[]) => {
+    setAttachments(prev => [...prev, ...files.map(f => ({ ...f, type: 'file' }))]);
+    toast({
+      title: "Files Added",
+      description: `${files.length} file(s) added to your submission.`,
+      variant: "default"
+    });
+  };
+
+  const handleVoiceRecording = (audioBlob: Blob, duration: number) => {
+    const recording = {
+      id: Date.now().toString(),
+      type: 'voice',
+      blob: audioBlob,
+      duration: duration,
+      name: `Voice Note ${new Date().toLocaleTimeString()}`,
+      size: audioBlob.size
+    };
+    setAttachments(prev => [...prev, recording]);
+    toast({
+      title: "Voice Note Added",
+      description: `Voice recording (${Math.round(duration)}s) added to your submission.`,
+      variant: "default"
+    });
+  };
+
+  const handleDocumentImport = (document: any) => {
+    const docAttachment = {
+      id: document.id,
+      type: 'document',
+      name: document.title,
+      content: document.content,
+      url: document.url,
+      lastModified: document.lastModified,
+      size: document.content.length
+    };
+    setAttachments(prev => [...prev, docAttachment]);
+    toast({
+      title: "Document Added",
+      description: `"${document.title}" imported from Google Docs.`,
+      variant: "default"
+    });
   };
 
   return (
@@ -454,26 +510,64 @@ const DataSubmissionForm: React.FC<DataSubmissionFormProps> = ({ userRole }) => 
 
         <Card>
           <CardHeader>
-            <CardTitle>Additional Attachments</CardTitle>
-            <CardDescription>Upload supporting documents, voice notes, or images</CardDescription>
+            <CardTitle>Attachments & Media</CardTitle>
+            <CardDescription>Add supporting documents, voice notes, and files from various sources</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              <Button variant="outline" type="button" className="h-24 flex flex-col items-center justify-center">
-                <Upload className="h-6 w-6 mb-2" />
-                Upload Files
-              </Button>
+            <Tabs defaultValue="files" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="files" className="flex items-center space-x-2">
+                  <Upload className="h-4 w-4" />
+                  <span>Upload Files</span>
+                </TabsTrigger>
+                <TabsTrigger value="voice" className="flex items-center space-x-2">
+                  <Mic className="h-4 w-4" />
+                  <span>Voice Notes</span>
+                </TabsTrigger>
+                <TabsTrigger value="docs" className="flex items-center space-x-2">
+                  <FileText className="h-4 w-4" />
+                  <span>Google Docs</span>
+                </TabsTrigger>
+              </TabsList>
               
-              <Button variant="outline" type="button" className="h-24 flex flex-col items-center justify-center">
-                <Mic className="h-6 w-6 mb-2" />
-                Record Voice Note
-              </Button>
+              <TabsContent value="files" className="mt-4">
+                <FileUpload onFilesUpload={handleFileUpload} />
+              </TabsContent>
               
-              <Button variant="outline" type="button" className="h-24 flex flex-col items-center justify-center">
-                <FileText className="h-6 w-6 mb-2" />
-                Add Document
-              </Button>
-            </div>
+              <TabsContent value="voice" className="mt-4">
+                <VoiceRecorder onRecordingComplete={handleVoiceRecording} />
+              </TabsContent>
+              
+              <TabsContent value="docs" className="mt-4">
+                <GoogleDocsIntegration onDocumentImport={handleDocumentImport} />
+              </TabsContent>
+            </Tabs>
+            
+            {attachments.length > 0 && (
+              <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+                <h4 className="font-medium mb-3">Attachments Summary ({attachments.length})</h4>
+                <div className="grid gap-2">
+                  {attachments.map((attachment, index) => (
+                    <div key={attachment.id || index} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center space-x-2">
+                        {attachment.type === 'voice' && <Mic className="h-4 w-4 text-primary" />}
+                        {attachment.type === 'file' && <Upload className="h-4 w-4 text-primary" />}
+                        {attachment.type === 'document' && <FileText className="h-4 w-4 text-primary" />}
+                        <span className="truncate max-w-48">{attachment.name}</span>
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        {attachment.type === 'voice' 
+                          ? `${Math.round(attachment.duration || 0)}s` 
+                          : typeof attachment.size === 'number'
+                            ? `${Math.round(attachment.size / 1024)}KB`
+                            : attachment.size
+                        }
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
