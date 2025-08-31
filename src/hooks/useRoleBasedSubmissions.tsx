@@ -45,10 +45,30 @@ export const useRoleBasedSubmissions = () => {
         return;
       }
 
-      // Fetch submissions (no relational selects; we'll hydrate manually)
-      const { data: submissionsData, error: fetchError } = await supabase
-        .from('submissions')
-        .select('*')
+      // Get user's role
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const userRole = userProfile?.role || 'agent';
+
+      // Fetch submissions based on role and status
+      let query = supabase.from('submissions').select('*');
+      
+      if (userRole === 'partner') {
+        // Partners see pending submissions from field agents
+        query = query.eq('status', 'pending');
+      } else if (userRole === 'admin') {
+        // Admins see submissions ready for final approval
+        query = query.eq('status', 'ready_for_final');
+      } else {
+        // Agents see their own submissions
+        query = query.eq('user_id', user.id);
+      }
+      
+      const { data: submissionsData, error: fetchError } = await query
         .order('submitted_at', { ascending: false });
 
       if (fetchError) {
@@ -199,6 +219,38 @@ export const useRoleBasedSubmissions = () => {
     }
   };
 
+  const partnerApproveSubmission = async (submissionId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Authentication required');
+
+      // Mark submission as ready for final approval
+      const { error: updateErr } = await supabase
+        .from('submissions')
+        .update({
+          status: 'ready_for_final'
+        })
+        .eq('id', submissionId);
+      if (updateErr) throw updateErr;
+
+      toast({
+        title: "Submission Approved",
+        description: "Submission sent to administrators for final approval.",
+        variant: "default"
+      });
+
+      // Refresh data
+      await fetchSubmissions();
+    } catch (error) {
+      console.error('Error approving submission:', error);
+      toast({
+        title: "Error",
+        description: "Failed to approve submission. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const finalApproveSubmission = async (submissionId: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -252,8 +304,8 @@ export const useRoleBasedSubmissions = () => {
       if (updateErr) throw updateErr;
 
       toast({
-        title: "Submission Approved",
-        description: "Final approval completed and live metrics updated.",
+        title: "Final Approval Complete",
+        description: "Submission approved and live metrics updated.",
         variant: "default"
       });
 
@@ -310,6 +362,7 @@ export const useRoleBasedSubmissions = () => {
     refetch: fetchSubmissions,
     approveMetric,
     rejectMetric,
+    partnerApproveSubmission,
     finalApproveSubmission,
     finalRejectSubmission
   };

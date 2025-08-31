@@ -32,6 +32,7 @@ const ApprovalQueue = () => {
     error, 
     approveMetric, 
     rejectMetric, 
+    partnerApproveSubmission,
     finalApproveSubmission, 
     finalRejectSubmission 
   } = useRoleBasedSubmissions();
@@ -372,6 +373,68 @@ const ApprovalQueue = () => {
                             </div>
                           )}
 
+                          {/* Partner Approval for Pending Submissions */}
+                          {submission.status === "pending" && (
+                            <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <h4 className="font-medium text-primary">Partner Approval Required</h4>
+                                  <p className="text-sm text-muted-foreground">Review field agent submission and approve to send for final processing.</p>
+                                </div>
+                                <div className="flex space-x-2">
+                                  <Dialog>
+                                    <DialogTrigger asChild>
+                                      <Button variant="outline" className="border-destructive text-destructive">
+                                        <XCircle className="h-4 w-4 mr-2" />
+                                        Reject Submission
+                                      </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                      <DialogHeader>
+                                        <DialogTitle>Reject Submission</DialogTitle>
+                                        <DialogDescription>
+                                          Reject this field agent submission and provide feedback for revision.
+                                        </DialogDescription>
+                                      </DialogHeader>
+                                      <div className="space-y-4">
+                                        <div>
+                                          <Label htmlFor="partner-rejection-reason">Rejection Reason</Label>
+                                          <Textarea
+                                            id="partner-rejection-reason"
+                                            placeholder="Explain why this submission is being rejected..."
+                                            value={rejectionReason}
+                                            onChange={(e) => setRejectionReason(e.target.value)}
+                                            rows={4}
+                                          />
+                                        </div>
+                                        <div className="flex justify-end space-x-2">
+                                          <Button variant="outline" onClick={() => setRejectionReason("")}>
+                                            Cancel
+                                          </Button>
+                                          <Button 
+                                            variant="destructive"
+                                            onClick={() => handleFinalReject(submission.id, rejectionReason)}
+                                            disabled={!rejectionReason.trim()}
+                                          >
+                                            Reject Submission
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </DialogContent>
+                                  </Dialog>
+                                  
+                                  <Button 
+                                    onClick={() => partnerApproveSubmission(submission.id)}
+                                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                                  >
+                                    <CheckCircle className="h-4 w-4 mr-2" />
+                                    Approve & Send to Admin
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
                           {/* Final Submission Approval */}
                           {submission.status === "ready_for_final" && (
                             <div className="p-4 bg-success/5 border border-success/20 rounded-lg">
@@ -434,14 +497,12 @@ const ApprovalQueue = () => {
                             </div>
                           )}
 
-                          {submission.status !== "ready_for_final" && (
+                          {submission.status !== "ready_for_final" && submission.status !== "pending" && (
                             <div className="p-4 bg-warning/5 border border-warning/20 rounded-lg">
                               <div className="flex items-center space-x-2">
                                 <Clock className="h-4 w-4 text-warning" />
                                 <span className="text-sm font-medium text-warning">
-                                  {submission.status === "pending" 
-                                    ? "Waiting for individual metric approvals" 
-                                    : "Some metrics still need approval"}
+                                  Some metrics still need approval
                                 </span>
                               </div>
                             </div>
