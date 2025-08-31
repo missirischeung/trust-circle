@@ -90,20 +90,20 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                 <CardContent>
                   <div className="text-2xl font-bold">12</div>
                   <p className="text-xs text-muted-foreground">
-                    +2 from yesterday
+                    8 metrics pending approval
                   </p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Approved This Month</CardTitle>
+                  <CardTitle className="text-sm font-medium">Ready for Final Approval</CardTitle>
                   <CheckCircle className="h-4 w-4 text-success" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-success">84</div>
+                  <div className="text-2xl font-bold text-success">3</div>
                   <p className="text-xs text-muted-foreground">
-                    +12% from last month
+                    All metrics approved
                   </p>
                 </CardContent>
               </Card>
@@ -148,31 +148,41 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                       <div>
                         <p className="font-medium">Prevention Resource Distribution - Phnom Penh</p>
                         <p className="text-sm text-muted-foreground">Submitted by partner.cambodia@org.com</p>
+                        <div className="flex space-x-2 mt-1">
+                          <Badge variant="outline" className="border-success text-success text-xs">1 approved</Badge>
+                          <Badge variant="outline" className="border-warning text-warning text-xs">3 pending</Badge>
+                        </div>
                       </div>
                     </div>
-                    <Badge variant="outline">Pending</Badge>
+                    <Badge variant="outline">Partially Approved</Badge>
                   </div>
                   
                   <div className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center space-x-3">
                       <div className="w-2 h-2 bg-success rounded-full"></div>
                       <div>
-                        <p className="font-medium">Safe Housing Report - Kathmandu</p>
-                        <p className="text-sm text-muted-foreground">Approved by administrator</p>
+                        <p className="font-medium">Community Engagement Report - Bangkok</p>
+                        <p className="text-sm text-muted-foreground">All metrics individually approved</p>
+                        <div className="flex space-x-2 mt-1">
+                          <Badge variant="outline" className="border-success text-success text-xs">3 approved</Badge>
+                        </div>
                       </div>
                     </div>
-                    <Badge variant="outline" className="border-success text-success">Approved</Badge>
+                    <Badge variant="outline" className="border-success text-success">Ready for Final</Badge>
                   </div>
                   
                   <div className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center space-x-3">
                       <div className="w-2 h-2 bg-primary rounded-full"></div>
                       <div>
-                        <p className="font-medium">Trauma Care Update - Field Report</p>
-                        <p className="text-sm text-muted-foreground">Updated 2 hours ago</p>
+                        <p className="font-medium">Safe Housing Report - Kathmandu</p>
+                        <p className="text-sm text-muted-foreground">Awaiting individual metric reviews</p>
+                        <div className="flex space-x-2 mt-1">
+                          <Badge variant="outline" className="border-warning text-warning text-xs">4 pending</Badge>
+                        </div>
                       </div>
                     </div>
-                    <Badge>New</Badge>
+                    <Badge>Pending Review</Badge>
                   </div>
                 </div>
               </CardContent>

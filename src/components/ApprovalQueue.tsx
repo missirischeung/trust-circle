@@ -16,12 +16,15 @@ import {
   User,
   FileText,
   AlertTriangle,
-  MessageSquare
+  MessageSquare,
+  Check,
+  X
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Submission, SubmissionMetric, MetricApproval } from "@/types/submissions";
 
-// Mock data for pending submissions
-const pendingSubmissions = [
+// Mock data for pending submissions with individual metric approvals
+const pendingSubmissions: Submission[] = [
   {
     id: "SUB-001",
     submittedBy: "partner.cambodia@org.com",
@@ -39,14 +42,15 @@ const pendingSubmissions = [
         timestamp: "2024-01-15 16:45"
       }
     ],
-    metrics: {
-      individualsReached: 175,
-      scholarshipsDistributed: 25,
-      schoolsReached: 5,
-      communitiesEngaged: 3
-    },
-    status: "pending",
-    priority: "normal"
+    metrics: [
+      { field: "individualsReached", value: 175, approval: { status: "pending" } },
+      { field: "scholarshipsDistributed", value: 25, approval: { status: "approved", approvedBy: "admin@org.com", approvedAt: "2024-01-15 17:00" } },
+      { field: "schoolsReached", value: 5, approval: { status: "pending" } },
+      { field: "communitiesEngaged", value: 3, approval: { status: "pending" } }
+    ],
+    status: "partially_approved",
+    priority: "normal",
+    finalApproval: { status: "pending" }
   },
   {
     id: "SUB-002",
@@ -57,14 +61,15 @@ const pendingSubmissions = [
     location: "Kathmandu, Nepal",
     description: "Monthly report on safe housing capacity and new survivor intake.",
     changes: [],
-    metrics: {
-      safeHomes: 12,
-      newSurvivors: 3,
-      careStaff: 8,
-      traumaCare: 15
-    },
+    metrics: [
+      { field: "safeHomes", value: 12, approval: { status: "pending" } },
+      { field: "newSurvivors", value: 3, approval: { status: "pending" } },
+      { field: "careStaff", value: 8, approval: { status: "pending" } },
+      { field: "traumaCare", value: 15, approval: { status: "pending" } }
+    ],
     status: "pending",
-    priority: "high"
+    priority: "high",
+    finalApproval: { status: "pending" }
   },
   {
     id: "SUB-003",
@@ -90,34 +95,102 @@ const pendingSubmissions = [
         timestamp: "2024-01-14 08:30"
       }
     ],
-    metrics: {
-      leadersTrained: 15,
-      presentationsConducted: 3,
-      communitiesEngaged: 2
-    },
-    status: "pending",
-    priority: "normal"
+    metrics: [
+      { field: "leadersTrained", value: 15, approval: { status: "approved", approvedBy: "admin@org.com", approvedAt: "2024-01-14 10:00" } },
+      { field: "presentationsConducted", value: 3, approval: { status: "approved", approvedBy: "admin@org.com", approvedAt: "2024-01-14 10:00" } },
+      { field: "communitiesEngaged", value: 2, approval: { status: "approved", approvedBy: "admin@org.com", approvedAt: "2024-01-14 10:00" } }
+    ],
+    status: "ready_for_final",
+    priority: "normal",
+    finalApproval: { status: "pending" }
   }
 ];
 
 const ApprovalQueue = () => {
   const { toast } = useToast();
   const [submissions, setSubmissions] = useState(pendingSubmissions);
-  const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [metricRejectionReason, setMetricRejectionReason] = useState("");
 
-  const handleApprove = (submissionId: string) => {
+  const handleMetricApprove = (submissionId: string, metricField: string) => {
     setSubmissions(prev => 
-      prev.filter(sub => sub.id !== submissionId)
+      prev.map(sub => {
+        if (sub.id === submissionId) {
+          const updatedMetrics = sub.metrics.map(metric => 
+            metric.field === metricField 
+              ? { ...metric, approval: { status: "approved" as const, approvedBy: "admin@org.com", approvedAt: new Date().toISOString() } }
+              : metric
+          );
+          
+          // Check if all metrics are approved to update submission status
+          const allApproved = updatedMetrics.every(m => m.approval.status === "approved");
+          const newStatus: Submission['status'] = allApproved ? "ready_for_final" : "partially_approved";
+          
+          return { ...sub, metrics: updatedMetrics, status: newStatus };
+        }
+        return sub;
+      })
     );
+    
     toast({
-      title: "Submission Approved",
-      description: "Data has been approved and added to live metrics.",
+      title: "Metric Approved",
+      description: `${metricField.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())} has been approved.`,
       variant: "default"
     });
   };
 
-  const handleReject = (submissionId: string, reason: string) => {
+  const handleMetricReject = (submissionId: string, metricField: string, reason: string) => {
+    setSubmissions(prev => 
+      prev.map(sub => {
+        if (sub.id === submissionId) {
+          const updatedMetrics = sub.metrics.map(metric => 
+            metric.field === metricField 
+              ? { ...metric, approval: { status: "rejected" as const, rejectionReason: reason } }
+              : metric
+          );
+          return { ...sub, metrics: updatedMetrics };
+        }
+        return sub;
+      })
+    );
+    
+    toast({
+      title: "Metric Rejected",
+      description: `${metricField.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())} has been rejected.`,
+      variant: "destructive"
+    });
+    setMetricRejectionReason("");
+  };
+
+  const handleFinalApprove = (submissionId: string) => {
+    setSubmissions(prev => 
+      prev.map(sub => {
+        if (sub.id === submissionId) {
+          const updatedStatus: Submission['status'] = "approved";
+          const updatedFinalApproval: Submission['finalApproval'] = { 
+            status: "approved", 
+            approvedBy: "admin@org.com", 
+            approvedAt: new Date().toISOString() 
+          };
+          return { 
+            ...sub, 
+            status: updatedStatus,
+            finalApproval: updatedFinalApproval
+          };
+        }
+        return sub;
+      }).filter(sub => sub.id !== submissionId) // Remove from queue after final approval
+    );
+    
+    toast({
+      title: "Submission Finalized",
+      description: "All data has been approved and added to live metrics.",
+      variant: "default"
+    });
+  };
+
+  const handleFinalReject = (submissionId: string, reason: string) => {
     setSubmissions(prev => 
       prev.filter(sub => sub.id !== submissionId)
     );
@@ -142,13 +215,38 @@ const ApprovalQueue = () => {
     }
   };
 
-  const formatMetrics = (metrics: any) => {
-    return Object.entries(metrics)
-      .filter(([_, value]) => typeof value === 'number' && value > 0)
-      .map(([key, value]) => {
-        const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-        return { label, value: value as number };
-      });
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "pending":
+        return <Badge variant="outline" className="border-warning text-warning">Pending Review</Badge>;
+      case "partially_approved":
+        return <Badge variant="outline" className="border-primary text-primary">Partially Approved</Badge>;
+      case "ready_for_final":
+        return <Badge variant="outline" className="border-success text-success">Ready for Final Approval</Badge>;
+      case "approved":
+        return <Badge variant="outline" className="border-success text-success">Approved</Badge>;
+      case "rejected":
+        return <Badge variant="outline" className="border-destructive text-destructive">Rejected</Badge>;
+      default:
+        return <Badge variant="outline">Unknown</Badge>;
+    }
+  };
+
+  const getMetricApprovalBadge = (approval: MetricApproval) => {
+    switch (approval.status) {
+      case "approved":
+        return <Badge variant="outline" className="border-success text-success text-xs">Approved</Badge>;
+      case "rejected":
+        return <Badge variant="outline" className="border-destructive text-destructive text-xs">Rejected</Badge>;
+      case "pending":
+        return <Badge variant="outline" className="border-warning text-warning text-xs">Pending</Badge>;
+      default:
+        return <Badge variant="outline" className="text-xs">Unknown</Badge>;
+    }
+  };
+
+  const formatMetricLabel = (field: string) => {
+    return field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
   };
 
   return (
@@ -244,14 +342,82 @@ const ApprovalQueue = () => {
                             <p className="text-sm text-muted-foreground mt-1">{submission.description}</p>
                           </div>
 
-                          {/* Metrics */}
+                          {/* Metrics with Individual Approvals */}
                           <div>
-                            <Label className="text-sm font-medium mb-3 block">Submitted Metrics</Label>
-                            <div className="grid gap-3 md:grid-cols-2">
-                              {formatMetrics(submission.metrics).map(({ label, value }) => (
-                                <div key={label} className="flex justify-between items-center p-3 bg-muted/50 rounded">
-                                  <span className="text-sm">{label}</span>
-                                  <span className="font-medium">{value}</span>
+                            <Label className="text-sm font-medium mb-3 block">Submitted Metrics - Individual Approval Required</Label>
+                            <div className="space-y-3">
+                              {submission.metrics.map((metric) => (
+                                <div key={metric.field} className="flex items-center justify-between p-4 border rounded-lg">
+                                  <div className="space-y-1">
+                                    <div className="flex items-center space-x-2">
+                                      <span className="font-medium text-sm">{formatMetricLabel(metric.field)}</span>
+                                      {getMetricApprovalBadge(metric.approval)}
+                                    </div>
+                                    <div className="text-lg font-bold text-primary">{metric.value}</div>
+                                    {metric.approval.status === "approved" && (
+                                      <div className="text-xs text-muted-foreground">
+                                        Approved by {metric.approval.approvedBy} at {metric.approval.approvedAt}
+                                      </div>
+                                    )}
+                                    {metric.approval.status === "rejected" && (
+                                      <div className="text-xs text-destructive">
+                                        Rejected: {metric.approval.rejectionReason}
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  {metric.approval.status === "pending" && (
+                                    <div className="flex space-x-2">
+                                      <Dialog>
+                                        <DialogTrigger asChild>
+                                          <Button variant="outline" size="sm" className="border-destructive text-destructive">
+                                            <X className="h-4 w-4" />
+                                          </Button>
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                          <DialogHeader>
+                                            <DialogTitle>Reject Metric</DialogTitle>
+                                            <DialogDescription>
+                                              Reject {formatMetricLabel(metric.field)} and provide feedback
+                                            </DialogDescription>
+                                          </DialogHeader>
+                                          <div className="space-y-4">
+                                            <div>
+                                              <Label htmlFor="metric-rejection-reason">Rejection Reason</Label>
+                                              <Textarea
+                                                id="metric-rejection-reason"
+                                                placeholder="Explain why this metric is being rejected..."
+                                                value={metricRejectionReason}
+                                                onChange={(e) => setMetricRejectionReason(e.target.value)}
+                                                rows={3}
+                                              />
+                                            </div>
+                                            <div className="flex justify-end space-x-2">
+                                              <Button variant="outline" onClick={() => setMetricRejectionReason("")}>
+                                                Cancel
+                                              </Button>
+                                              <Button 
+                                                variant="destructive"
+                                                onClick={() => handleMetricReject(submission.id, metric.field, metricRejectionReason)}
+                                                disabled={!metricRejectionReason.trim()}
+                                              >
+                                                Reject Metric
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        </DialogContent>
+                                      </Dialog>
+                                      
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="border-success text-success hover:bg-success hover:text-success-foreground"
+                                        onClick={() => handleMetricApprove(submission.id, metric.field)}
+                                      >
+                                        <Check className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  )}
                                 </div>
                               ))}
                             </div>
@@ -288,57 +454,80 @@ const ApprovalQueue = () => {
                             </div>
                           )}
 
-                          {/* Action Buttons */}
-                          <div className="flex justify-end space-x-4 pt-4 border-t">
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button variant="outline" className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground">
-                                  <XCircle className="h-4 w-4 mr-2" />
-                                  Reject
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent>
-                                <DialogHeader>
-                                  <DialogTitle>Reject Submission</DialogTitle>
-                                  <DialogDescription>
-                                    Please provide a reason for rejection. This will be sent to the submitter for revision.
-                                  </DialogDescription>
-                                </DialogHeader>
-                                <div className="space-y-4">
-                                  <div>
-                                    <Label htmlFor="rejection-reason">Rejection Reason</Label>
-                                    <Textarea
-                                      id="rejection-reason"
-                                      placeholder="Explain what needs to be corrected or provide additional guidance..."
-                                      value={rejectionReason}
-                                      onChange={(e) => setRejectionReason(e.target.value)}
-                                      rows={4}
-                                    />
-                                  </div>
-                                  <div className="flex justify-end space-x-2">
-                                    <Button variant="outline" onClick={() => setRejectionReason("")}>
-                                      Cancel
-                                    </Button>
-                                    <Button 
-                                      variant="destructive"
-                                      onClick={() => handleReject(submission.id, rejectionReason)}
-                                      disabled={!rejectionReason.trim()}
-                                    >
-                                      Send Rejection
-                                    </Button>
-                                  </div>
+                          {/* Final Submission Approval */}
+                          {submission.status === "ready_for_final" && (
+                            <div className="p-4 bg-success/5 border border-success/20 rounded-lg">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <h4 className="font-medium text-success">Ready for Final Approval</h4>
+                                  <p className="text-sm text-muted-foreground">All metrics have been individually approved. Finalize to add to live metrics.</p>
                                 </div>
-                              </DialogContent>
-                            </Dialog>
-                            
-                            <Button 
-                              onClick={() => handleApprove(submission.id)}
-                              className="bg-success hover:bg-success/90 text-success-foreground"
-                            >
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              Approve
-                            </Button>
-                          </div>
+                                <div className="flex space-x-2">
+                                  <Dialog>
+                                    <DialogTrigger asChild>
+                                      <Button variant="outline" className="border-destructive text-destructive">
+                                        <XCircle className="h-4 w-4 mr-2" />
+                                        Reject Final
+                                      </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                      <DialogHeader>
+                                        <DialogTitle>Reject Final Submission</DialogTitle>
+                                        <DialogDescription>
+                                          Reject the entire submission even though individual metrics were approved.
+                                        </DialogDescription>
+                                      </DialogHeader>
+                                      <div className="space-y-4">
+                                        <div>
+                                          <Label htmlFor="final-rejection-reason">Final Rejection Reason</Label>
+                                          <Textarea
+                                            id="final-rejection-reason"
+                                            placeholder="Explain why the final submission is being rejected..."
+                                            value={rejectionReason}
+                                            onChange={(e) => setRejectionReason(e.target.value)}
+                                            rows={4}
+                                          />
+                                        </div>
+                                        <div className="flex justify-end space-x-2">
+                                          <Button variant="outline" onClick={() => setRejectionReason("")}>
+                                            Cancel
+                                          </Button>
+                                          <Button 
+                                            variant="destructive"
+                                            onClick={() => handleFinalReject(submission.id, rejectionReason)}
+                                            disabled={!rejectionReason.trim()}
+                                          >
+                                            Reject Final Submission
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </DialogContent>
+                                  </Dialog>
+                                  
+                                  <Button 
+                                    onClick={() => handleFinalApprove(submission.id)}
+                                    className="bg-success hover:bg-success/90 text-success-foreground"
+                                  >
+                                    <CheckCircle className="h-4 w-4 mr-2" />
+                                    Finalize & Add to Live Metrics
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {submission.status !== "ready_for_final" && (
+                            <div className="p-4 bg-warning/5 border border-warning/20 rounded-lg">
+                              <div className="flex items-center space-x-2">
+                                <Clock className="h-4 w-4 text-warning" />
+                                <span className="text-sm font-medium text-warning">
+                                  {submission.status === "pending" 
+                                    ? "Waiting for individual metric approvals" 
+                                    : "Some metrics still need approval"}
+                                </span>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </DialogContent>
                     </Dialog>
@@ -348,7 +537,10 @@ const ApprovalQueue = () => {
               
               <CardContent>
                 <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">{submission.description}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">{submission.description}</p>
+                    {getStatusBadge(submission.status)}
+                  </div>
                   
                   {submission.changes.length > 0 && (
                     <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
@@ -367,17 +559,37 @@ const ApprovalQueue = () => {
                     </div>
                   )}
 
-                  <div className="flex flex-wrap gap-2">
-                    {formatMetrics(submission.metrics).slice(0, 4).map(({ label, value }) => (
-                      <Badge key={label} variant="outline" className="text-xs">
-                        {label}: {value}
-                      </Badge>
-                    ))}
-                    {formatMetrics(submission.metrics).length > 4 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{formatMetrics(submission.metrics).length - 4} more
-                      </Badge>
-                    )}
+                  {/* Metrics Overview */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium">Metrics Status:</span>
+                      <div className="flex space-x-2">
+                        <Badge variant="outline" className="border-success text-success text-xs">
+                          {submission.metrics.filter(m => m.approval.status === "approved").length} Approved
+                        </Badge>
+                        <Badge variant="outline" className="border-warning text-warning text-xs">
+                          {submission.metrics.filter(m => m.approval.status === "pending").length} Pending
+                        </Badge>
+                        {submission.metrics.filter(m => m.approval.status === "rejected").length > 0 && (
+                          <Badge variant="outline" className="border-destructive text-destructive text-xs">
+                            {submission.metrics.filter(m => m.approval.status === "rejected").length} Rejected
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2">
+                      {submission.metrics.slice(0, 4).map((metric) => (
+                        <Badge key={metric.field} variant="outline" className="text-xs">
+                          {formatMetricLabel(metric.field)}: {metric.value}
+                        </Badge>
+                      ))}
+                      {submission.metrics.length > 4 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{submission.metrics.length - 4} more
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </div>
               </CardContent>
