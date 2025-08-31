@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Upload, Mic, FileText, Save, MapPin, Calendar, Users, WifiOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import FileUpload from "@/components/FileUpload";
 import VoiceRecorder from "@/components/VoiceRecorder";
 import GoogleDocsIntegration from "@/components/GoogleDocsIntegration";
@@ -67,29 +68,108 @@ const DataSubmissionForm: React.FC<DataSubmissionFormProps> = ({ userRole }) => 
     { value: "nepali", label: "Nepali (नेपाली)" }
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Include attachments in submission
-    const submissionData = {
-      ...formData,
-      attachments: attachments
-    };
-    
-    // Simulate offline storage
-    if (isOffline) {
-      localStorage.setItem('offline_submission_' + Date.now(), JSON.stringify(submissionData));
-      toast({
-        title: "Saved Offline",
-        description: `Your submission with ${attachments.length} attachment(s) has been saved locally and will be synced when connection is restored.`,
-        variant: "default"
+    try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        toast({
+          title: "Authentication Error", 
+          description: "Please log in to submit data.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Create submission record
+      const { data: submission, error: submissionError } = await supabase
+        .from('submissions')
+        .insert({
+          user_id: user.id,
+          category: formData.category,
+          location: formData.location,
+          description: formData.description,
+          status: 'pending',
+          priority: 'normal'
+        })
+        .select()
+        .single();
+
+      if (submissionError) {
+        console.error('Submission error:', submissionError);
+        toast({
+          title: "Submission Failed",
+          description: "Failed to submit data. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Save metrics if any have values
+      const metricsToSave = [];
+      Object.entries(formData.numbers).forEach(([field, value]) => {
+        if (value && value.trim() !== '') {
+          metricsToSave.push({
+            submission_id: submission.id,
+            field,
+            value: parseFloat(value),
+            approval_status: 'pending'
+          });
+        }
       });
-    } else {
+
+      if (metricsToSave.length > 0) {
+        const { error: metricsError } = await supabase
+          .from('submission_metrics')
+          .insert(metricsToSave);
+
+        if (metricsError) {
+          console.error('Metrics error:', metricsError);
+          // Don't fail the whole submission for metrics errors
+        }
+      }
+
+      // Save attachments metadata if any
+      if (attachments.length > 0) {
+        const attachmentsToSave = attachments.map(attachment => ({
+          submission_id: submission.id,
+          file_name: attachment.name || 'Untitled',
+          file_type: attachment.type || 'unknown',
+          attachment_type: attachment.type === 'voice' ? 'audio' : 
+                           attachment.type === 'document' ? 'document' : 'file',
+          file_size: attachment.size || 0,
+          google_doc_id: attachment.type === 'document' ? attachment.id : null
+        }));
+
+        const { error: attachmentsError } = await supabase
+          .from('submission_attachments')
+          .insert(attachmentsToSave);
+
+        if (attachmentsError) {
+          console.error('Attachments error:', attachmentsError);
+          // Don't fail the whole submission for attachment errors
+        }
+      }
+
+      // Success!
       toast({
-        title: "Submission Sent",
+        title: "Submission Successful",
         description: `Your data with ${attachments.length} attachment(s) has been submitted for review and approval.`,
         variant: "default"
       });
+
+      console.log('Submission created:', submission);
+
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "Submission Failed",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+      return;
     }
 
     // Reset form data but keep attachments
