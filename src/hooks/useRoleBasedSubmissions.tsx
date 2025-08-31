@@ -58,7 +58,7 @@ export const useRoleBasedSubmissions = () => {
       let query = supabase.from('submissions').select('*');
       
       if (userRole === 'partner') {
-        // Partners see pending submissions from field agents
+        // Partners see pending submissions from field agents (RLS will filter for agent submissions only)
         query = query.eq('status', 'pending');
       } else if (userRole === 'admin') {
         // Admins see submissions ready for final approval
